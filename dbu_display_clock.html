@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Backyard Ultra Timer</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<link rel="stylesheet" href="./src/styles.css">
+        
+        <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+        <script src="https://unpkg.com/htmx.org@1.5.0"        integrity="sha384-oGA+prIp5Vchu6we2YkI51UtVzN9Jpx2Z7PnR1I78PnZlN8LkrCT4lqqqmDkyrvI"        crossorigin="anonymous"></script>
+	
+    </head>
+
+	<body class="bg-gray-900 font-gibson  leading-normal tracking-normal" bg-gray-900 
+        x-data='loadAlarmConfig()'
+        x-init="() =>  {statTimer();}"
+        x-bind:class="time.show ? '' : 'animate-bg-pulse'">
+		<div class="px-4 sm:px-6 max-w-5xl mx-auto"  >
+			<section class="flex  justify-center h-screen">
+                <!-- <section class="flex items-center justify-center h-screen"> -->
+                    
+                    <div 
+                        @click="time.clicked = false" 
+                        x-show="time.clicked" 
+                        class="absolute top-0 left-0 text-gray-200 text-xl">
+                        Initialise
+                    </div> 
+
+                    <audio id="get_ready"><source src="./src/8-bit_get_ready.mp3" type="audio/mpeg" /></audio>
+                    <audio id="go"><source src="./src/8-big_go.mp3" type="audio/mpeg" /></audio>
+
+                        <div class="absolute bottom-0 left-0 text-gray-200">
+                            <div class="text-gray-200 border-0 bg-transparent text-8xl pl-10 pb-10">Yard
+                                <span class="text-gray-200 border-0 bg-transparent text-9xl" type="text" x-text="time.hour"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute bottom-0 right-0 text-gray-200">
+                            <div class="text-gray-200 border-0 bg-transparent text-8xl pl-10 pb-10">
+                                <span class="text-gray-200 border-0 bg-transparent text-9xl" type="text" x-text="time.dist"></span>
+                                <span class="mr-4">km </span>
+                            </div>
+                        </div>
+
+                        <h3  class="mt-28">
+                            <!-- <span type="text" x-text="time.hour"></span>: -->
+                            <span class="text-gray-200 border-0 bg-gray-900 text-clock" x-show="time.show" type="text" x-text="time.clock_face"></span>
+                            <span class="animate-pulse text-red-500 border-0 bg-transparent text-countdown" x-show= "!time.show" type="text" x-text="time.second"></span>
+            
+                            <!-- <span class="text-gray-200 border-0 bg-gray-900 text-clock">*</span> -->
+                            <!-- <span class="text-gray-200 border-0 bg-gray-900 text-clock" type="text" x-text="time.race_day"></span> -->
+                            <!-- <span type="text" x-text="time.a"></span> -->
+                        </h3>
+                    </div>
+                </section>
+		</div>
+	</body>
+</html>
+
+<script>
+    
+
+    var date = moment().local();
+    var race_start_hour = 6;
+    var race_start_date = moment("2021-10-17", "YYYY-MM-DD");
+
+
+    function loadAlarmConfig($refs) {
+
+        return  {
+            time: {
+                hour: moment().local().format("H") - race_start_hour,
+                minute: 60 - moment().local().format("m"),
+                second: 60 - moment().local().format("s"),
+                //a: moment().local().format("A"),
+                clock_face : '',
+                race_day: moment().local().diff(race_start_date, 'days'),
+                show: true,
+                bg_class: '',
+                dist: 6.706 * 0,       
+                clicked: true,         
+            },
+            
+            statTimer: function() {
+
+                const self = this;
+
+                function updateClock() {
+                    self.time.race_day = moment().local().diff(race_start_date, 'days');
+                    self.time.hour = (self.time.race_day * 24) + (moment().local().format("H") - race_start_hour);
+                    self.time.minute = 60 - moment().local().format("m") -1;
+                    self.time.second = 60 - moment().local().format("s"); 
+                    //self.time.a = moment().local().format("A");  
+                    self.time.clock_face = [ String(self.time.minute).padStart(2, '0'),':',String(self.time.second).padStart(2, '0')].join('');
+                    self.time.dist = Math.round(6.706 * self.time.hour * 10) / 10;
+
+                    if (self.time.second < 10 && self.time.minute == 0) {
+                        self.time.show = false;
+                        self.time.bg_class = '';
+                        if (self.time.second == 1) {
+                            document.getElementById('go').play();
+                        }
+                        else {
+                            document.getElementById('get_ready').play();
+                        }
+                    }
+                    else {
+                        self.time.show = true;
+                    }
+
+                    
+                }
+
+                setInterval(() => {
+                    updateClock();
+                }, 1000);
+            }
+        }
+    }
+
+</script>
+
+<script>
+	document.body.addEventListener('htmx:configRequest', (event) => {
+		event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+	})
+</script>
+
+
+
